@@ -1345,11 +1345,29 @@ public class ThriftServerRunner implements Runnable {
     @Override
     public List<TCell> getRowOrBefore(ByteBuffer tableName, ByteBuffer row,
         ByteBuffer family) throws IOError {
-      try {
-        HTable table = getTable(getBytes(tableName));
-        Result result = table.getRowOrBefore(getBytes(row), getBytes(family));
-        return ThriftUtilities.cellFromHBase(result.raw());
-      } catch (IOException e) {
+       try {
+         HTable table = getTable(getBytes(tableName));
+         Result result = table.getRowOrBefore(getBytes(row), getBytes(family));
+
+        // Add row key to return cell set
+
+        KeyValue[] in = result.raw();
+
+        List<TCell> list = null;
+        if (in != null) {
+          list = new ArrayList<TCell>(in.length + 1);
+          for (int i = 0; i < in.length; i++) {
+            list.add(new TCell(ByteBuffer.wrap(in[i].getValue()), in[i].getTimestamp()));
+          }
+
+          list.add(new TCell(ByteBuffer.wrap(result.getRow()), 0));
+
+        } else {
+          list = new ArrayList<TCell>(0);
+        }
+
+        return list;
+       } catch (IOException e) {
         LOG.warn(e.getMessage(), e);
         throw new IOError(e.getMessage());
       }
