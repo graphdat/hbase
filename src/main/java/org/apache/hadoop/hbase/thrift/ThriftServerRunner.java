@@ -1351,7 +1351,10 @@ public class ThriftServerRunner implements Runnable {
 
         // Add row key to return cell set
 
-        KeyValue[] in = result.raw();
+        KeyValue[] in = null;
+
+	if (result != null)
+		in = result.raw();
 
         List<TCell> list = null;
         if (in != null) {
